@@ -24,6 +24,10 @@
 #include "document-store.h"
 #include "src/xdp-utils.h"
 
+#ifndef O_FSYNC
+#define O_FSYNC O_SYNC
+#endif
+
 #define NON_DOC_DIR_PERMS 0500
 #define DOC_DIR_PERMS_FILE 0700
 #define DOC_DIR_PERMS_DIR 0500
