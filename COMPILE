@@ -1,0 +1,32 @@
+This instructions is for use with newly installed fedora 31.
+
+First, update pipewire-libs-0.3.2-3.fc32.x86_64.rpm
+ - Download pipewire-libs-0.3.2-3.fc32.x86_64.rpm
+ - update with dnf upgrade pipewire-libs-0.3.2-3.fc32.x86_64.rpm --best --allowerasing
+ - Reinstall pipewire-libs's deps: dnf install `cat pipewire-libs-deps.txt`
+
+Second, install pipewire-devel-0.3.2-3.fc32.x86_64.rpm
+ - Download pipewire-devel-0.3.2-3.fc32.x86_64.rpm
+ - install with dnf install pipewire-devel-0.3.2-3.fc32.x86_64.rpm 
+
+Thrid, update pipewire-0.3.2-3.fc32.x86_64.rpm
+ - Download pipewire-0.3.2-3.fc32.x86_64.rpm
+ - update with dnf update pipewire-0.3.2-3.fc32.x86_64.rpm 
+
+
+Later, install rest of requirements:
+ - glib-devel.x86_64
+ - glib2-devel.x86_64
+ - autoconf.noarch
+ - automake.noarch
+ - make.x86_64
+ - libtool.x86_64
+ - gtk-doc.x86_64
+ - gettext-devel.x86_64
+ - fontconfig-devel.x86_64
+ - json-glib-devel.x86_64
+ - geoclue2-devel.x86_64
+ - fuse.x86_64
+ - fuse-devel.x86_64
+ - meson.noarch
+
