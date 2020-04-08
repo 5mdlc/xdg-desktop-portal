@@ -1,4 +1,4 @@
-chrome-gnome-shell
+#chrome-gnome-shell
 firefox
 gdm
 gnome-classic-session
@@ -15,6 +15,3 @@ gnome-shell-extension-launch-new-instance
 gnome-shell-extension-places-menu
 gnome-shell-extension-window-list
 mutter
-pipewire
-xdg-desktop-portal
-xdg-desktop-portal-gtk
