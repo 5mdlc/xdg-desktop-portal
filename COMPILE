@@ -1,22 +1,18 @@
-This instructions is for use with newly installed fedora 31.
-
-This process uninstall gdm package, so only work on terminal.
+This instructions is for use with fresh installed fedora 31.
 
 First upgrade system.
  - dnf upgrade
 
-Second, update pipewire-libs-0.3.2-3.fc32.x86_64.rpm
+Second, install alternative version of pipewire-libs and pipewire-devel 
  - Download pipewire-libs-0.3.2-3.fc32.x86_64.rpm
- - update with dnf upgrade pipewire-libs-0.3.2-3.fc32.x86_64.rpm --best --allowerasing
-
-Thrid, install pipewire-devel-0.3.2-3.fc32.x86_64.rpm
  - Download pipewire-devel-0.3.2-3.fc32.x86_64.rpm
- - install with dnf install pipewire-devel-0.3.2-3.fc32.x86_64.rpm 
-
-Fourth, update pipewire-0.3.2-3.fc32.x86_64.rpm
- - Download pipewire-0.3.2-3.fc32.x86_64.rpm
- - update with dnf install pipewire-0.3.2-3.fc32.x86_64.rpm 
-
+ - Unpackage on custom directory with:
+      rpm2cpio pipewire-libs-0.3.2-3.fc32.x86_64.rpm | cpio -idmv
+      rpm2cpio pipewire-devel-0.3.2-3.fc32.x86_64.rpm | cpio -idmv
+ - set PIPEWIRE_CFLAGS variable:
+      export PIPEWIRE_CFLAGS="-I/customdir/usr/include/pipewire-0.3 -I/customdir/usr/include/spa-0.2"
+ - set PIPEWIRE_CFLAGS variable:
+      export PIPEWIRE_LIBS="-L/customdir/usr/lib64 -lpipewire-0.3"
 
 Later, install rest of requirements:
  - glib-devel.x86_64
@@ -34,3 +30,8 @@ Later, install rest of requirements:
  - fuse-devel.x86_64
  - meson.noarch
 
+
+To execute binaries:
+ - set LD_LIBRARY_PATH variable:
+      export LD_LIBRARY_PATH=/customdir/usr/lib64/:$LD_LIBRARY_PATH
+      

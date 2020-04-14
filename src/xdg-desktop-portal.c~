@@ -239,7 +239,6 @@ on_bus_acquired (GDBusConnection *connection,
   g_ptr_array_free (impls, TRUE);
 
   implementation = find_portal_implementation ("org.freedesktop.impl.portal.FileChooser");
-  fprintf(stderr, "org.freedesktop.impl.portal.FileChooser := 0x%x\n", implementation );
   if (implementation != NULL)
     export_portal_implementation (connection,
                                   file_chooser_create (connection, implementation->dbus_name, lockdown));
