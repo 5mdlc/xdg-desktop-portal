@@ -40,6 +40,7 @@
 #include "print.h"
 #include "memory-monitor.h"
 #include "network-monitor.h"
+#include "lib-usb.h"
 #include "proxy-resolver.h"
 #include "screenshot.h"
 #include "notification.h"
@@ -77,6 +78,7 @@ message_handler (const gchar *log_domain,
                  const gchar *message,
                  gpointer user_data)
 {
+  fprintf(stderr, "xdg-desktop-portal.c::message_handler\n");
   /* Make this look like normal console output */
   if (log_level & G_LOG_LEVEL_DEBUG)
     printf ("XDP: %s\n", message);
@@ -90,6 +92,7 @@ printerr_handler (const gchar *string)
   int is_tty = isatty (1);
   const char *prefix = "";
   const char *suffix = "";
+  fprintf(stderr, "xdg-desktop-portal.c::printerr_handler \n");
   if (is_tty)
     {
       prefix = "\x1b[31m\x1b[1m"; /* red, bold */
@@ -103,6 +106,7 @@ method_needs_request (GDBusMethodInvocation *invocation)
 {
   const char *interface;
   const char *method;
+  fprintf(stderr, "xdg-desktop-portal.c::method_needs_request \n");
 
   interface = g_dbus_method_invocation_get_interface_name (invocation);
   method = g_dbus_method_invocation_get_method_name (invocation);
@@ -142,6 +146,7 @@ authorize_callback (GDBusInterfaceSkeleton *interface,
   g_autoptr(XdpAppInfo) app_info = NULL;
 
   g_autoptr(GError) error = NULL;
+  fprintf(stderr, "xdg-desktop-portal.c::authorize_callback \n");
 
   app_info = xdp_invocation_lookup_app_info_sync (invocation, NULL, &error);
   if (app_info == NULL)
@@ -166,6 +171,7 @@ export_portal_implementation (GDBusConnection *connection,
                               GDBusInterfaceSkeleton *skeleton)
 {
   g_autoptr(GError) error = NULL;
+  fprintf(stderr, "xdg-desktop-portal.c::export_portal_implementation \n");
 
   if (skeleton == NULL)
     {
@@ -193,6 +199,7 @@ export_portal_implementation (GDBusConnection *connection,
 static void
 peer_died_cb (const char *name)
 {
+  fprintf(stderr, "xdg-desktop-portal.c::peer_died_cb %s\n", name);
   close_requests_for_sender (name);
   close_sessions_for_sender (name);
 }
@@ -229,6 +236,7 @@ on_bus_acquired (GDBusConnection *connection,
     lockdown = xdp_impl_lockdown_skeleton_new ();
 
   export_portal_implementation (connection, memory_monitor_create (connection));
+  export_portal_implementation (connection, lib_usb_create (connection));
   export_portal_implementation (connection, network_monitor_create (connection));
   export_portal_implementation (connection, proxy_resolver_create (connection));
   export_portal_implementation (connection, trash_create (connection));
@@ -331,6 +339,7 @@ on_name_acquired (GDBusConnection *connection,
                   const gchar     *name,
                   gpointer         user_data)
 {
+  fprintf(stderr, "xdg-desktop-portal.c::on_name_acquired \n");
   g_debug ("%s acquired", name);
 }
 
@@ -339,6 +348,7 @@ on_name_lost (GDBusConnection *connection,
               const gchar     *name,
               gpointer         user_data)
 {
+  fprintf(stderr, "xdg-desktop-portal.c::on_name_lost \n");
   g_main_loop_quit (loop);
 }
 

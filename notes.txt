@@ -1,0 +1,30 @@
+Documentacion de portales de flatpak:
+https://flatpak.github.io/xdg-desktop-portal/portal-docs.html
+
+
+Como crear un paquete de flatpak:
+http://docs.flatpak.org/en/latest/first-build.html
+
+Libreria de usb:
+https://github.com/libusb/libusb/releases/download/v1.0.23/libusb-1.0.23.tar.bz2
+
+
+Aca esta la magia, parece:
+G_DEFINE_TYPE_WITH_CODE (FileChooser, file_chooser, XDP_TYPE_FILE_CHOOSER_SKELETON,
+                         G_IMPLEMENT_INTERFACE (XDP_TYPE_FILE_CHOOSER, file_chooser_iface_init));
+
+Como esta dise#ado, para que un portal sea utilizado la funcionalidad debe
+saber si esta corriendo en un sandbox, y segun la situacion, llamar a las
+funciones standart o comunicarse con el portal via dbus, lo que en nuestro
+caso implica darle la habilidad de saber si esta en un sandbox a la libreria
+de libusb, cosa que no seria nativa como en el resto de los portales.
+Por esto ultimo es que hay que buscar un metodo que permita tener actualizado
+dicha libreria, ya sea incorporandolo en la libreria standart o generando un
+mecanismo para incorporarlo via un patch, por ejemplo, teniendo que utilizar
+estas nuevas librerias desde flatpak.
+
+
+
+Analizar device.c
+
+

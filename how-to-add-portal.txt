@@ -1,0 +1,8 @@
+Para agregar un nuevo portal:
+1) crear data/org.freedesktop.portal.{NombrePortal}.xml, con la definicion del
+mismo, metodos, propiedades, etc.
+2) crear el fuente correspondiente, con la funcionlidad, con nombre
+src/{Nombre-Portal}.c.
+3) en src/xdg-desktop-portal.c, exportar el portal con:
+  export_portal_implementation (connection, Nombre_Portal_create (connection));
+   
