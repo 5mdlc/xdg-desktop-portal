@@ -171,7 +171,7 @@ export_portal_implementation (GDBusConnection *connection,
                               GDBusInterfaceSkeleton *skeleton)
 {
   g_autoptr(GError) error = NULL;
-  fprintf(stderr, "xdg-desktop-portal.c::export_portal_implementation \n");
+  //fprintf(stderr, "xdg-desktop-portal.c::export_portal_implementation \n");
 
   if (skeleton == NULL)
     {
@@ -236,8 +236,8 @@ on_bus_acquired (GDBusConnection *connection,
     lockdown = xdp_impl_lockdown_skeleton_new ();
 
   export_portal_implementation (connection, memory_monitor_create (connection));
-  export_portal_implementation (connection, lib_usb_create (connection));
   export_portal_implementation (connection, network_monitor_create (connection));
+  export_portal_implementation (connection, lib_usb_create (connection));
   export_portal_implementation (connection, proxy_resolver_create (connection));
   export_portal_implementation (connection, trash_create (connection));
   export_portal_implementation (connection, game_mode_create (connection));
@@ -247,7 +247,6 @@ on_bus_acquired (GDBusConnection *connection,
   g_ptr_array_free (impls, TRUE);
 
   implementation = find_portal_implementation ("org.freedesktop.impl.portal.FileChooser");
-  fprintf(stderr, "org.freedesktop.impl.portal.FileChooser := 0x%x\n", implementation );
   if (implementation != NULL)
     export_portal_implementation (connection,
                                   file_chooser_create (connection, implementation->dbus_name, lockdown));

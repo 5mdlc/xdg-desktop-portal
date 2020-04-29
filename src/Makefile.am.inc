@@ -25,6 +25,7 @@ PORTAL_IFACE_FILES =\
 	data/org.freedesktop.portal.Print.xml \
 	data/org.freedesktop.portal.MemoryMonitor.xml \
 	data/org.freedesktop.portal.NetworkMonitor.xml \
+	data/org.freedesktop.portal.LibUsb.xml \
 	data/org.freedesktop.portal.ProxyResolver.xml \
 	data/org.freedesktop.portal.Screenshot.xml \
 	data/org.freedesktop.portal.Notification.xml \
@@ -126,6 +127,8 @@ xdg_desktop_portal_SOURCES = \
 	src/memory-monitor.h		\
 	src/network-monitor.c		\
 	src/network-monitor.h		\
+	src/lib-usb.c			\
+	src/lib-usb.h			\
 	src/proxy-resolver.c		\
 	src/proxy-resolver.h		\
 	src/screenshot.c		\

@@ -5,4 +5,9 @@ mismo, metodos, propiedades, etc.
 src/{Nombre-Portal}.c.
 3) en src/xdg-desktop-portal.c, exportar el portal con:
   export_portal_implementation (connection, Nombre_Portal_create (connection));
+4) agregar la compilacion del nuevo fuente en el src/Makefile.am.inc en la variable
+xdg_desktop_portal_SOURCES los fuentes y en PORTAL_IFACE_FILES el xml
+correspondiente, siguiendo con el ejemplo,
+data/org.freedesktop.portal.{Nombre.Portal}.xml
+correspondientes, por ejemplo src/{Nombre-Portal}.c src/{Nombre-Portal}.h
    

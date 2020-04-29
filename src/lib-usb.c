@@ -130,6 +130,24 @@ handle_get_connectivity (XdpLibUsb     *object,
 }
 
 static gboolean
+handle_libusb_init (XdpLibUsb     *object,
+                   GDBusMethodInvocation *invocation,
+                  gint                  context)
+{
+  fprintf(stderr, "lib-usb.c::handle_lib_init \n");
+  return TRUE;
+}
+
+static gboolean
+handle_libusb_exit (XdpLibUsb     *object,
+                   GDBusMethodInvocation *invocation,
+                  gint                  context)
+{
+  fprintf(stderr, "lib-usb.c::handle_lib_init \n");
+  return TRUE;
+}
+
+static gboolean
 handle_get_status (XdpLibUsb     *object,
                    GDBusMethodInvocation *invocation)
 {
@@ -211,24 +229,25 @@ handle_can_reach (XdpLibUsb     *object,
 }
 
 static void
-lib_usb_iface_init (XdpLibUsbIface *iface)
-{
-  fprintf(stderr, "lib-usb.c::lib_usb_iface_init \n");
-  iface->handle_get_available = handle_get_available;
-  iface->handle_get_metered = handle_get_metered;
-  iface->handle_get_connectivity = handle_get_connectivity;
-  iface->handle_get_status = handle_get_status;
-  iface->handle_lib_init = handle_get_status;
-  iface->handle_can_reach = handle_can_reach;
-}
-
-static void
 usb_changed (GObject *object,
                  gboolean network_available,
                  LibUsb *lu)
 {
   fprintf(stderr, "lib-usb.c::usb_changed \n");
   //xdp_lib_usb_emit_changed (XDP_LIB_USB (lu));
+}
+
+static void
+lib_usb_iface_init (XdpLibUsbIface *iface)
+{
+  fprintf(stderr, "lib-usb.c::lib_usb_iface_init \n");
+  iface->handle_get_available = handle_get_available;
+  iface->handle_get_metered = handle_get_metered;
+  iface->handle_get_connectivity = handle_get_connectivity;
+  iface->handle_can_reach = handle_can_reach;
+
+  iface->handle_libusb_init = handle_libusb_init;
+  iface->handle_libusb_exit = handle_libusb_exit;
 }
 
 static void
@@ -239,7 +258,7 @@ lib_usb_init (LibUsb *lu)
 
   g_signal_connect (lu->monitor, "usb-changed", G_CALLBACK (usb_changed), lu);
 
-  //xdp_lib_usb_set_version (XDP_LIB_USB (lu), 3);
+  xdp_lib_usb_set_version (XDP_LIB_USB (lu), 1);
 }
 
 static void

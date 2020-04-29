@@ -86,7 +86,7 @@
       <arg type='u' name='connectivity' direction='out'/>
     </method>
     <!--
-        GetStatus:
+        LibPepeInit:
         @status: a dictionary with the current values
 
         Returns the three values all at once.
@@ -115,14 +115,11 @@
 
         This method was added in version 3 to avoid multiple round-trips.
     -->
-    <method name="GetStatus">
-      <arg type='a{sv}' name='status' direction='out'/>
-    </method>
 
-    <method name="lib_init">
-      <arg type='a{sv}' name='context' direction='in'/>
+    <!--method name="LibInit">
+      <arg type='a{sv}' name='status' direction='out'/>
       <arg type='b' name='result' direction='out'/>
-    </method>
+    </method-->
 
     <!--
         CanReach:
@@ -137,6 +134,15 @@
       <arg type='s' name='hostname' direction='in'/>
       <arg type='u' name='port' direction='in'/>
       <arg type='b' name='reachable' direction='out'/>
+    </method>
+
+    <method name="libusb_init">
+      <arg type='i' name='context' direction='in'/>
+      <arg type='i' name='rc' direction='out'/>
+    </method>
+
+    <method name="libusb_exit">
+      <arg type='i' name='context' direction='in'/>
     </method>
 
     <property name="version" type="u" access="read"/>
