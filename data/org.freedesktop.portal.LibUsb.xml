@@ -137,8 +137,20 @@
     </method>
 
     <method name="libusb_init">
-      <arg type='i' name='context' direction='in'/>
+      <arg type='u' name='context' direction='in'/>
+      <arg type='u' name='context' direction='out'/>
       <arg type='i' name='rc' direction='out'/>
+    </method>
+
+    <method name="libusb_get_device_list">
+      <arg type='i' name='context' direction='in'/>
+      <arg type='i' name='device_list' direction='in'/>
+      <arg type='i' name='rc' direction='out'/>
+    </method>
+
+    <method name="libusb_free_device_list">
+      <arg type='i' name='device_list' direction='in'/>
+      <arg type='i' name='unref_devices' direction='in'/>
     </method>
 
     <method name="libusb_exit">

@@ -24,6 +24,8 @@
 #include <string.h>
 #include <gio/gio.h>
 
+#include <libusb.h>
+
 #include "lib-usb.h"
 #include "request.h"
 #include "xdp-dbus.h"
@@ -130,11 +132,42 @@ handle_get_connectivity (XdpLibUsb     *object,
 }
 
 static gboolean
-handle_libusb_init (XdpLibUsb     *object,
+handle_libusb_get_device_list (XdpLibUsb     *object,
                    GDBusMethodInvocation *invocation,
-                  gint                  context)
+                  gint                  context,
+                  gint                  device_list)
+{
+  fprintf(stderr, "lib-usb.c::handle_lib_get_device_list \n");
+  return TRUE;
+}
+
+static gboolean
+handle_libusb_free_device_list (XdpLibUsb     *object,
+                   GDBusMethodInvocation *invocation,
+                  gint                  context,
+                  gint                  unref_devices)
 {
   fprintf(stderr, "lib-usb.c::handle_lib_init \n");
+  return TRUE;
+}
+
+static gboolean
+handle_libusb_init (XdpLibUsb     *object,
+                   GDBusMethodInvocation *invocation,
+                  guint                  context)
+{
+  fprintf(stderr, "lib-usb.c::handle_lib_init context := 0x%x \n", context);
+
+  //libusb_device **devs;
+  libusb_context **_context = 0L;
+  fprintf(stderr, "_context := 0x%x\n", (unsigned int)_context);
+
+  //guint _context = 232;
+  gint result = libusb_init((libusb_context **)&_context);
+  fprintf(stderr, "_context := 0x%x\n", (unsigned int)_context);
+
+  g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ui)", _context, result));
+
   return TRUE;
 }
 
@@ -248,6 +281,8 @@ lib_usb_iface_init (XdpLibUsbIface *iface)
 
   iface->handle_libusb_init = handle_libusb_init;
   iface->handle_libusb_exit = handle_libusb_exit;
+  iface->handle_libusb_get_device_list = handle_libusb_get_device_list;
+  iface->handle_libusb_free_device_list = handle_libusb_free_device_list;
 }
 
 static void

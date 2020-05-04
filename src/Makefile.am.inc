@@ -197,6 +197,7 @@ xdg_desktop_portal_LDADD = \
 	$(BASE_LIBS) \
 	$(PIPEWIRE_LIBS) \
 	$(GEOCLUE_LIBS) \
+	-lusb-1.0 \
 	$(NULL)
 xdg_desktop_portal_CFLAGS = \
 	-DDATADIR=\"$(datadir)\" \
@@ -208,6 +209,7 @@ xdg_desktop_portal_CFLAGS = \
 	-I$(srcdir)/src \
 	-I$(builddir)/src \
 	-I$(srcdir)/document-portal \
+	-I/usr/include/libusb-1.0 \
 	$(NULL)
 xdg_desktop_portal_CPPFLAGS = \
 	-DGETTEXT_PACKAGE=\"$(GETTEXT_PACKAGE)\"        \
