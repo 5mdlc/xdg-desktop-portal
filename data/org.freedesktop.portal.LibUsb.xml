@@ -151,6 +151,20 @@
 
     <method name="libusb_get_device_descriptor">
       <arg type='t' name='device' direction='in'/>
+      <arg type='i' name='rc1' direction='out'/>
+      <arg type='i' name='rc2' direction='out'/>
+      <arg type='i' name='rc3' direction='out'/>
+      <arg type='i' name='rc4' direction='out'/>
+      <arg type='i' name='rc5' direction='out'/>
+      <arg type='i' name='rc6' direction='out'/>
+      <arg type='i' name='rc7' direction='out'/>
+      <arg type='i' name='rc8' direction='out'/>
+      <arg type='i' name='rc9' direction='out'/>
+      <arg type='i' name='rc10' direction='out'/>
+      <arg type='i' name='rc11' direction='out'/>
+      <arg type='i' name='rc12' direction='out'/>
+      <arg type='i' name='rc13' direction='out'/>
+      <arg type='i' name='rc14' direction='out'/>
       <arg type='i' name='rc' direction='out'/>
     </method>
 

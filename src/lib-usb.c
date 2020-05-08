@@ -245,7 +245,7 @@ handle_libusb_get_device_descriptor (XdpLibUsb *object,
 	int ret = libusb_get_device_descriptor(dev, &desc);
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  ret := %d\n", ret);
 
-	g_dbus_method_invocation_return_value (invocation, g_variant_new("(i)", ret));
+	//g_dbus_method_invocation_return_value (invocation, g_variant_new("(i)", ret));
 	// TODO: serialize desc struct to dbus response
 		/*
 	GVariantBuilder *builder;
@@ -260,11 +260,11 @@ handle_libusb_get_device_descriptor (XdpLibUsb *object,
 
 	GVariant *value = g_variant_new ("a(i)", builder);
 	fprintf(stderr, "value := 0x%lx.\n", value);
+	*/
 
 
 	g_dbus_method_invocation_return_value (invocation, g_variant_new (
-		"ai", 
-		builder
+		"(iiiiiiiiiiiiiii)", 
 		(int)desc.bLength,
 		(int)desc.bDescriptorType,
 		(unsigned int)desc.bcdUSB,
@@ -281,8 +281,7 @@ handle_libusb_get_device_descriptor (XdpLibUsb *object,
 		(unsigned int)desc.bNumConfigurations,
 		ret
 		));
-	g_variant_builder_unref(builder);
-		*/
+	//g_variant_builder_unref(builder);
 
 	fprintf(stderr, "\n");
 	return TRUE;
