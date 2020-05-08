@@ -145,6 +145,7 @@
     <method name="libusb_get_device_list">
       <arg type='t' name='context' direction='in'/>
       <arg type='t' name='device_list' direction='in'/>
+      <arg type='t' name='device_list' direction='out'/>
       <arg type='i' name='rc' direction='out'/>
     </method>
 

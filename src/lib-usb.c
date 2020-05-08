@@ -46,8 +46,8 @@ typedef struct _libusb_context_portal
 void
 free_context_portal(libusb_context_portal *context_portal)
 {
-	if(context_portal){
-		if(context_portal->context) free(*context_portal->context);
+	if(0 && context_portal){
+		//if(context_portal->context) free(*context_portal->context);
 		context_portal->context = 0L;
 
 		if(context_portal->devs && context_portal->cnt_devs > 0){
@@ -100,10 +100,11 @@ handle_libusb_get_device_list (XdpLibUsb *object,
 						 context, device_list);
 	libusb_context_portal *context_portal = (libusb_context_portal *) (context);
 
-	context_portal->cnt_devs = libusb_get_device_list(NULL, &context_portal->devs);
-	fprintf(stderr, "devs := 0x%lx, context_portal->cnt_devs := %d\n", (unsigned long)context_portal->devs, context_portal->cnt_devs);
+	context_portal->cnt_devs = libusb_get_device_list(*(context_portal->context), &(context_portal->devs));
+	fprintf(stderr, "devs := 0x%lx, context_portal->cnt_devs := %d\n", 
+						 (unsigned long)context_portal->devs, context_portal->cnt_devs);
 
-	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(i)", context_portal->cnt_devs));
+	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ti)", context_portal->devs, context_portal->cnt_devs));
 
 	return TRUE;
 }
@@ -111,19 +112,29 @@ handle_libusb_get_device_list (XdpLibUsb *object,
 static gboolean
 handle_libusb_free_device_list (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
-									gulong context,
+									gulong devices_list,
 									gulong unref_devices)
 {
-	fprintf(stderr, "lib-usb.c::handle_libusb_free_device_list context := 0x%lx, unref_devices := 0x%lx\n",
-									context, unref_devices);
+	fprintf(stderr, 
+				 "lib-usb.c::handle_libusb_free_device_list devices_list := 0x%lx, unref_devices := 0x%ld\n",
+				devices_list, unref_devices);
+	//libusb_context_portal *context_portal = (libusb_context_portal *) (context);
+	libusb_device **devs = (libusb_device **)devices_list;
+
+	libusb_free_device_list(devs, unref_devices);
+
+	/*
+	context_portal->devs = 0L;
+	context_portal->cnt_devs = 0L;
+	*/
 
 	return TRUE;
 }
 
 static gboolean
-handle_libusb_init (XdpLibUsb		 *object,
+handle_libusb_init (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
-									gulong									context)
+									gulong context)
 {
 	fprintf(stderr, "lib-usb.c::handle_lib_init context := 0x%lx \n", context);
 
@@ -140,11 +151,11 @@ handle_libusb_init (XdpLibUsb		 *object,
 }
 
 static gboolean
-handle_libusb_exit (XdpLibUsb		 *object,
+handle_libusb_exit (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
-									gulong									context)
+									gulong context)
 {
-	fprintf(stderr, "lib-usb.c::handle_lib_exit context := 0x%lxn", context);
+	fprintf(stderr, "lib-usb.c::handle_lib_exit context := 0x%lx\n", context);
 
 	libusb_context_portal *context_portal = (libusb_context_portal *) (context);
 	fprintf(stderr, "context_portal := 0x%lx", (unsigned long)context_portal);
