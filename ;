@@ -42,47 +42,14 @@ typedef struct _libusb_context_portal
 	int cnt_devs;
 } libusb_context_portal;
 
-typedef struct _libusb_device_list_portal
-{
-	int id;
-	libusb_context_portal **context_portal;
-	libusb_device **devs;
-	int cnt_devs;
-} libusb_device_portal;
-
 GList *list_libusb_context_portal_alloc = NULL;
 GList *list_libusb_devs_alloc = NULL;
-GList *list_libusb_devs_list_alloc = NULL;
-
-
-libusb_device *
-get_device_portal(libusb_device *dev)
-{
-	libusb_device *rc = NULL;
-	GList *tmp = g_list_first(list_libusb_devs_list_alloc);
-	fprintf(stderr, "lib-usb.c::get_device_portal dev := 0x%lx.\n", dev);
-
-	if(tmp){
-		libusb_device_portal *devtmp = tmp->data;
-		fprintf(stderr, "lib-usb.c::get_device_portal tmp := 0x%lx, tmp->devs := 0x%lx.\n", devtmp, devtmp->devs);
-
-		if((unsigned long)dev >= (unsigned long)devtmp->devs && (unsigned long)dev <= (unsigned long)devtmp->devs + (unsigned long)devtmp->cnt_devs){
-			unsigned long i = (unsigned long)dev - (unsigned long)devtmp->devs;
-			fprintf(stderr, "i := %ld, devtmp->devs[%ld] := 0x%lx.\n", i, i, devtmp->devs[i]);
-			rc = devtmp->devs[i];
-		}//endif true
-
-		tmp = tmp->next;
-	}//endif true
-
-	return(rc);
-}
 
 void
 free_context_portal(libusb_context_portal *context_portal)
 {
-	if(0 && context_portal && g_list_find(list_libusb_context_portal_alloc, context_portal)){
-		if(context_portal->context) g_free(*context_portal->context);
+	if(/*0 && */context_portal && g_list_find(list_libusb_context_portal_alloc, context_portal)){
+		if(context_portal->context) free(*context_portal->context);
 		context_portal->context = 0L;
 
 		if(context_portal->devs && context_portal->cnt_devs > 0
@@ -98,10 +65,9 @@ free_context_portal(libusb_context_portal *context_portal)
 
 		context_portal->devs = 0L;
 
+		g_list_remove(list_libusb_context_portal_alloc, context_portal);
 		context_portal = 0L;
 	}//endif true
-
-	g_list_remove(list_libusb_context_portal_alloc, context_portal);
 }//end free_context_portal
 
 typedef struct _LibUsb LibUsb;
@@ -142,46 +108,17 @@ handle_libusb_get_device_list (XdpLibUsb *object,
 
 	if(g_list_find(list_libusb_context_portal_alloc, context_portal)){
 		context_portal->cnt_devs = libusb_get_device_list(*(context_portal->context), &(context_portal->devs));
-		libusb_device_portal *device_portal = g_new(libusb_device_portal, 1);
-		device_portal->context_portal = context_portal;
-		device_portal->devs = context_portal->devs;
-		device_portal->cnt_devs = context_portal->cnt_devs;
-
 		list_libusb_devs_alloc = g_list_append(list_libusb_devs_alloc, context_portal->devs);
-		list_libusb_devs_list_alloc = g_list_append(list_libusb_devs_list_alloc, device_portal);
 
+		fprintf(stderr, "devs := 0x%lx, context_portal->cnt_devs := %d\n", 
+						 (unsigned long)context_portal->devs, context_portal->cnt_devs);
 
-		fprintf(stderr, "devs := 0x%lx (0x%lx), context_portal->cnt_devs := %d\n", 
-						 (unsigned long)context_portal->devs, (unsigned long)context_portal->devs[0],
-						 context_portal->cnt_devs);
-
-
-
-
-		// TODO: Use GVariantBuilder ...
-		/*
-		GVariantBuilder *builder;
-		builder = g_variant_builder_new(G_VARIANT_TYPE("a(t)"));
-		for(int i = 0; i < context_portal->cnt_devs; i++)
-			g_variant_builder_add(builder, "(t)", context_portal->devs[i]);
-		GVariant *byte_array = g_variant_builder_end(builder);
-		g_variant_builder_unref(builder);
-
-		fprintf(stderr, "byte_array := 0x%lx.\n", byte_array);
-		*/
-
-
-		g_dbus_method_invocation_return_value (invocation, 
-				g_variant_new ("(ti)", context_portal->devs, context_portal->cnt_devs));
-
+		g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ti)", context_portal->devs, context_portal->cnt_devs));
 	}//endif true
 	else{
 		g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ti)", 0, -1));
 	}//endif false
 
-	// TODO: g_clear_object ?
-
-	fprintf(stderr, "\n");
 	return TRUE;
 }
 
@@ -200,15 +137,10 @@ handle_libusb_free_device_list (XdpLibUsb *object,
 		libusb_free_device_list(devs, unref_devices);
 		g_list_remove(list_libusb_devs_alloc, devs);
 
-		/*
 		context_portal->devs = 0L;
 		context_portal->cnt_devs = 0L;
-		*/
 	}//endif true
 
-	g_dbus_method_invocation_return_value (invocation, NULL);
-
-	fprintf(stderr, "\n");
 	return TRUE;
 }
 
@@ -229,62 +161,6 @@ handle_libusb_init (XdpLibUsb *object,
 
 	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ti)", context_portal, result));
 
-	fprintf(stderr, "\n");
-	return TRUE;
-}
-
-static gboolean
-handle_libusb_get_device_descriptor (XdpLibUsb *object,
-									 GDBusMethodInvocation *invocation,
-									gulong device)
-{
-	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  device := 0x%lx\n", device);
-	libusb_device *dev = get_device_portal(device);
-	struct libusb_device_descriptor desc;
-
-	int ret = libusb_get_device_descriptor(dev, &desc);
-	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  ret := %d\n", ret);
-
-	g_dbus_method_invocation_return_value (invocation, g_variant_new("(i)", ret));
-	// TODO: serialize desc struct to dbus response
-		/*
-	GVariantBuilder *builder;
-	builder = g_variant_builder_new(G_VARIANT_TYPE("ai"));
-
-	g_variant_builder_add(builder, "i", (int)desc.bLength);
-	g_variant_builder_add(builder, "i", (int)ret);
-
-	GVariant *byte_array = g_variant_builder_end(builder);
-
-	fprintf(stderr, "byte_array := 0x%lx.\n", byte_array);
-
-	GVariant *value = g_variant_new ("a(i)", builder);
-	fprintf(stderr, "value := 0x%lx.\n", value);
-
-
-	g_dbus_method_invocation_return_value (invocation, g_variant_new (
-		"ai", 
-		builder
-		(int)desc.bLength,
-		(int)desc.bDescriptorType,
-		(unsigned int)desc.bcdUSB,
-		(unsigned int)desc.bDeviceClass,
-		(unsigned int)desc.bDeviceSubClass,
-		(unsigned int)desc.bDeviceProtocol,
-		(unsigned int)desc.bMaxPacketSize0,
-		(unsigned int)desc.idVendor,
-		(unsigned int)desc.idProduct,
-		(unsigned int)desc.bcdDevice,
-		(unsigned int)desc.iManufacturer,
-		(unsigned int)desc.iProduct,
-		(unsigned int)desc.iSerialNumber,
-		(unsigned int)desc.bNumConfigurations,
-		ret
-		));
-	g_variant_builder_unref(builder);
-		*/
-
-	fprintf(stderr, "\n");
 	return TRUE;
 }
 
@@ -293,7 +169,7 @@ handle_libusb_exit (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
 									gulong context)
 {
-	fprintf(stderr, "lib-usb.c::handle_libusb_exit context := 0x%lx\n", context);
+	fprintf(stderr, "lib-usb.c::handle_lib_exit context := 0x%lx\n", context);
 
 	libusb_context_portal *context_portal = (libusb_context_portal *) (context);
 	fprintf(stderr, "context_portal := 0x%lx", (unsigned long)context_portal);
@@ -306,9 +182,6 @@ handle_libusb_exit (XdpLibUsb *object,
 		free_context_portal(context_portal);
 	}//endif true
 
-	g_dbus_method_invocation_return_value (invocation, NULL);
-
-	fprintf(stderr, "\n");
 	return TRUE;
 }
 
@@ -321,7 +194,6 @@ lib_usb_iface_init (XdpLibUsbIface *iface)
 	iface->handle_libusb_exit = handle_libusb_exit;
 	iface->handle_libusb_get_device_list = handle_libusb_get_device_list;
 	iface->handle_libusb_free_device_list = handle_libusb_free_device_list;
-	iface->handle_libusb_get_device_descriptor = handle_libusb_get_device_descriptor;
 }
 
 static void
