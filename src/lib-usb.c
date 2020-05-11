@@ -234,6 +234,59 @@ handle_libusb_init (XdpLibUsb *object,
 }
 
 static gboolean
+handle_libusb_get_bus_number (XdpLibUsb *object,
+									 GDBusMethodInvocation *invocation,
+									gulong device)
+{
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_bus_number device := 0x%lx.\n", device);
+	libusb_device *dev = get_device_portal(device);
+
+	int result = libusb_get_bus_number(dev);
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_bus_number result := %d.\n", result);
+
+	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(i)", result));
+
+	fprintf(stderr, "\n");
+	return TRUE;
+}
+
+static gboolean
+handle_libusb_get_device_address (XdpLibUsb *object,
+									 GDBusMethodInvocation *invocation,
+									gulong device)
+{
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_address device := 0x%lx.\n", device);
+	libusb_device *dev = get_device_portal(device);
+
+	int result = libusb_get_device_address(dev);
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_address result := %d.\n", result);
+
+	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(i)", result));
+
+	fprintf(stderr, "\n");
+	return TRUE;
+}
+
+static gboolean
+handle_libusb_open (XdpLibUsb *object,
+									 GDBusMethodInvocation *invocation,
+									gulong device)
+{
+	fprintf(stderr, "lib-usb.c::handle_libusb_open device := 0x%lx.\n", device);
+	libusb_device *dev = get_device_portal(device);
+	libusb_device_handle *handle = NULL;
+	fprintf(stderr, "dev := 0x%lx\n", (unsigned long)dev);
+	
+	int result = libusb_open(dev, &handle);
+	fprintf(stderr, "result := %d, handle := 0x%lx\n", result, (unsigned long)handle);
+
+	g_dbus_method_invocation_return_value (invocation, g_variant_new ("(ti)", handle, result));
+
+	fprintf(stderr, "\n");
+	return TRUE;
+}
+
+static gboolean
 handle_libusb_get_device_descriptor (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
 									gulong device)
@@ -245,42 +298,14 @@ handle_libusb_get_device_descriptor (XdpLibUsb *object,
 	int ret = libusb_get_device_descriptor(dev, &desc);
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  ret := %d\n", ret);
 
-	//g_dbus_method_invocation_return_value (invocation, g_variant_new("(i)", ret));
-	// TODO: serialize desc struct to dbus response
-		/*
-	GVariantBuilder *builder;
-	builder = g_variant_builder_new(G_VARIANT_TYPE("ai"));
-
-	g_variant_builder_add(builder, "i", (int)desc.bLength);
-	g_variant_builder_add(builder, "i", (int)ret);
-
-	GVariant *byte_array = g_variant_builder_end(builder);
-
-	fprintf(stderr, "byte_array := 0x%lx.\n", byte_array);
-
-	GVariant *value = g_variant_new ("a(i)", builder);
-	fprintf(stderr, "value := 0x%lx.\n", value);
-	*/
-
-
 	g_dbus_method_invocation_return_value (invocation, g_variant_new (
 		"(iiiiiiiiiiiiiii)", 
-		(int)desc.bLength,
-		(int)desc.bDescriptorType,
-		(unsigned int)desc.bcdUSB,
-		(unsigned int)desc.bDeviceClass,
-		(unsigned int)desc.bDeviceSubClass,
-		(unsigned int)desc.bDeviceProtocol,
-		(unsigned int)desc.bMaxPacketSize0,
-		(unsigned int)desc.idVendor,
-		(unsigned int)desc.idProduct,
-		(unsigned int)desc.bcdDevice,
-		(unsigned int)desc.iManufacturer,
-		(unsigned int)desc.iProduct,
-		(unsigned int)desc.iSerialNumber,
-		(unsigned int)desc.bNumConfigurations,
-		ret
-		));
+		(unsigned int)desc.bLength, (unsigned int)desc.bDescriptorType, (unsigned int)desc.bcdUSB,
+		(unsigned int)desc.bDeviceClass, (unsigned int)desc.bDeviceSubClass,
+		(unsigned int)desc.bDeviceProtocol, (unsigned int)desc.bMaxPacketSize0,
+		(unsigned int)desc.idVendor, (unsigned int)desc.idProduct, (unsigned int)desc.bcdDevice,
+		(unsigned int)desc.iManufacturer, (unsigned int)desc.iProduct, (unsigned int)desc.iSerialNumber,
+		(unsigned int)desc.bNumConfigurations, ret));
 	//g_variant_builder_unref(builder);
 
 	fprintf(stderr, "\n");
@@ -302,7 +327,7 @@ handle_libusb_exit (XdpLibUsb *object,
 
 		libusb_exit((libusb_context *)context_portal->context);
 
-		free_context_portal(context_portal);
+		//free_context_portal(context_portal);
 	}//endif true
 
 	g_dbus_method_invocation_return_value (invocation, NULL);
@@ -321,6 +346,11 @@ lib_usb_iface_init (XdpLibUsbIface *iface)
 	iface->handle_libusb_get_device_list = handle_libusb_get_device_list;
 	iface->handle_libusb_free_device_list = handle_libusb_free_device_list;
 	iface->handle_libusb_get_device_descriptor = handle_libusb_get_device_descriptor;
+
+	iface->handle_libusb_open = handle_libusb_open;
+
+	iface->handle_libusb_get_device_address = handle_libusb_get_device_address ;
+	iface->handle_libusb_get_bus_number = handle_libusb_get_bus_number ;
 }
 
 static void

@@ -168,6 +168,22 @@
       <arg type='i' name='rc' direction='out'/>
     </method>
 
+    <method name="libusb_open">
+      <arg type='t' name='device' direction='in'/>
+      <arg type='t' name='handle' direction='out'/>
+      <arg type='i' name='rc' direction='out'/>
+    </method>
+
+    <method name="libusb_get_bus_number">
+      <arg type='t' name='device' direction='in'/>
+      <arg type='i' name='rc' direction='out'/>
+    </method>
+
+    <method name="libusb_get_device_address">
+      <arg type='t' name='device' direction='in'/>
+      <arg type='i' name='rc' direction='out'/>
+    </method>
+
     <method name="libusb_free_device_list">
       <arg type='t' name='device_list' direction='in'/>
       <arg type='t' name='unref_devices' direction='in'/>
