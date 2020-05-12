@@ -28,3 +28,8 @@ estas nuevas librerias desde flatpak.
 Analizar device.c
 
 
+para devolver el fd?
+g_dbus_method_invocation_return_value_with_unix_fd_list
+                               (GDBusMethodInvocation *invocation,
+                                GVariant *parameters,
+                                GUnixFDList *fd_list);

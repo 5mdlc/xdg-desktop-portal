@@ -31,8 +31,33 @@
 #include "xdp-dbus.h"
 #include "xdp-utils.h"
 
+typedef struct {
+		unsigned long size,resident,share,text,lib,data,dt;
+} statm_t;
+
+void
+read_off_memory_status(statm_t *result)
+{
+	//unsigned long dummy;
+	const char* statm_path = "/proc/self/statm";
+
+	FILE *f = fopen(statm_path,"r");
+	if(!f){
+		perror(statm_path);
+		abort();
+	}
+	if(7 != fscanf(f,"%ld %ld %ld %ld %ld %ld %ld",
+		&result->size,&result->resident,&result->share,&result->text,&result->lib,&result->data,&result->dt))
+	{
+		perror(statm_path);
+		abort();
+	}
+	fclose(f);
+}
 
 
+
+unsigned long cCalls = 0;
 
 typedef struct _libusb_context_portal
 {
@@ -55,20 +80,45 @@ GList *list_libusb_devs_alloc = NULL;
 GList *list_libusb_devs_list_alloc = NULL;
 
 
+libusb_context_portal *
+get_context_portal_from_devs(libusb_device *dev)
+{
+	libusb_context_portal *rc = NULL;
+	GList *tmp = g_list_first(list_libusb_devs_list_alloc);
+	fprintf(stderr, "lib-usb.c::get_context_portal_from_devs dev := 0x%lx.\n", (unsigned long)dev);
+
+	while(tmp){
+		libusb_context_portal *devtmp = tmp->data;
+		fprintf(stderr, "lib-usb.c::get_context_portal_from_devs tmp := 0x%lx, tmp->devs := 0x%lx.\n",
+							 (unsigned long)devtmp, (unsigned long)devtmp->devs);
+
+		if((unsigned long)dev >= (unsigned long)devtmp->devs && (unsigned long)dev <= (unsigned long)devtmp->devs + (unsigned long)devtmp->cnt_devs){
+			unsigned long i = (unsigned long)dev - (unsigned long)devtmp->devs;
+			fprintf(stderr, "i := %ld, devtmp->devs[%ld] := 0x%lx.\n", i, i, (unsigned long)devtmp->devs[i]);
+			rc = devtmp;
+		}//endif true
+
+		tmp = tmp->next;
+	}//endif true
+
+	return(rc);
+}
+
 libusb_device *
 get_device_portal(libusb_device *dev)
 {
 	libusb_device *rc = NULL;
 	GList *tmp = g_list_first(list_libusb_devs_list_alloc);
-	fprintf(stderr, "lib-usb.c::get_device_portal dev := 0x%lx.\n", dev);
+	fprintf(stderr, "lib-usb.c::get_device_portal dev := 0x%lx.\n", (unsigned long)dev);
 
-	if(tmp){
+	while(tmp){
 		libusb_device_portal *devtmp = tmp->data;
-		fprintf(stderr, "lib-usb.c::get_device_portal tmp := 0x%lx, tmp->devs := 0x%lx.\n", devtmp, devtmp->devs);
+		fprintf(stderr, "lib-usb.c::get_device_portal tmp := 0x%lx, tmp->devs := 0x%lx.\n",
+							 (unsigned long)devtmp, (unsigned long)devtmp->devs);
 
 		if((unsigned long)dev >= (unsigned long)devtmp->devs && (unsigned long)dev <= (unsigned long)devtmp->devs + (unsigned long)devtmp->cnt_devs){
 			unsigned long i = (unsigned long)dev - (unsigned long)devtmp->devs;
-			fprintf(stderr, "i := %ld, devtmp->devs[%ld] := 0x%lx.\n", i, i, devtmp->devs[i]);
+			fprintf(stderr, "i := %ld, devtmp->devs[%ld] := 0x%lx.\n", i, i, (unsigned long)devtmp->devs[i]);
 			rc = devtmp->devs[i];
 		}//endif true
 
@@ -81,27 +131,40 @@ get_device_portal(libusb_device *dev)
 void
 free_context_portal(libusb_context_portal *context_portal)
 {
-	if(0 && context_portal && g_list_find(list_libusb_context_portal_alloc, context_portal)){
+	fprintf(stderr,"lib-usb.c::free_context_portal context_portal := 0x%lx.\n", 
+						 (unsigned long) context_portal);
+
+	if(1 && context_portal && g_list_find(list_libusb_context_portal_alloc, context_portal)){
 		if(context_portal->context) g_free(*context_portal->context);
 		context_portal->context = 0L;
 
+		fprintf(stderr,"lib-usb.c::free_context_portal context_portal->devs := 0x%lx, cnt_devs := %d.\n", 
+							 (unsigned long) context_portal->devs, context_portal->cnt_devs);
 		if(context_portal->devs && context_portal->cnt_devs > 0
 			&& g_list_find(list_libusb_devs_alloc, context_portal->devs)){
+			libusb_free_device_list(context_portal->devs, 1);
+			/*
 			for(int i = 0; i < context_portal->cnt_devs; i++){
-				free(context_portal->devs[i]);
+				fprintf(stderr,"lib-usb.c::free_context_portal context_portal->devs[%d] := 0x%lx.\n", 
+							 i, (unsigned long) context_portal->devs);
+				g_free(context_portal->devs[i]);
 				context_portal->devs[i] = 0L;
 			}//endfor
-			free(context_portal->devs) ;
+			*/
+			//g_free(context_portal->devs) ;
 
-			g_list_remove(list_libusb_devs_alloc, context_portal->devs);
+
 		}//endif true
+		list_libusb_devs_alloc = g_list_remove(list_libusb_devs_alloc, context_portal->devs);
+		list_libusb_devs_list_alloc = g_list_remove(list_libusb_devs_list_alloc, context_portal->devs);
 
 		context_portal->devs = 0L;
 
-		context_portal = 0L;
+		g_free(context_portal);
 	}//endif true
 
-	g_list_remove(list_libusb_context_portal_alloc, context_portal);
+	list_libusb_context_portal_alloc = g_list_remove(list_libusb_context_portal_alloc, context_portal);
+	context_portal = 0L;
 }//end free_context_portal
 
 typedef struct _LibUsb LibUsb;
@@ -136,14 +199,14 @@ handle_libusb_get_device_list (XdpLibUsb *object,
 									gulong context,
 									gulong device_list)
 {
-	fprintf(stderr, "lib-usb.c::handle_lib_get_device_list context := 0x%lx, device_list := 0x%lx \n", 
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_list context := 0x%lx, device_list := 0x%lx \n", 
 						 context, device_list);
 	libusb_context_portal *context_portal = (libusb_context_portal *) (context);
 
 	if(g_list_find(list_libusb_context_portal_alloc, context_portal)){
 		context_portal->cnt_devs = libusb_get_device_list(*(context_portal->context), &(context_portal->devs));
 		libusb_device_portal *device_portal = g_new(libusb_device_portal, 1);
-		device_portal->context_portal = context_portal;
+		device_portal->context_portal = (libusb_context_portal **)context_portal;
 		device_portal->devs = context_portal->devs;
 		device_portal->cnt_devs = context_portal->cnt_devs;
 
@@ -198,7 +261,16 @@ handle_libusb_free_device_list (XdpLibUsb *object,
 
 	if(g_list_find(list_libusb_devs_alloc, devs)){
 		libusb_free_device_list(devs, unref_devices);
-		g_list_remove(list_libusb_devs_alloc, devs);
+
+		fprintf(stderr, "lib-usb.c::handle_libusb_free_device_list devs := 0x%lx len %d - %d.\n",
+			(unsigned long)devs, g_list_length(list_libusb_devs_alloc),
+			g_list_length(list_libusb_devs_list_alloc));
+
+		list_libusb_devs_alloc = g_list_remove(list_libusb_devs_alloc, devs);
+		list_libusb_devs_list_alloc = g_list_remove(list_libusb_devs_list_alloc, get_context_portal_from_devs((libusb_device  *)devs));
+		fprintf(stderr, "lib-usb.c::handle_libusb_free_device_list devs := 0x%lx removed 0x%lx - 0x%lx.\n",
+			(unsigned long)devs, (unsigned long)list_libusb_devs_alloc,
+			(unsigned long)list_libusb_devs_list_alloc);
 
 		/*
 		context_portal->devs = 0L;
@@ -217,7 +289,9 @@ handle_libusb_init (XdpLibUsb *object,
 									 GDBusMethodInvocation *invocation,
 									gulong context)
 {
-	fprintf(stderr, "lib-usb.c::handle_lib_init context := 0x%lx \n", context);
+	fprintf(stderr, "lib-usb.c::handle_libusb_init context := 0x%lx, cCalls := %ld. \n", context, cCalls++);
+	fprintf(stderr, "lib-usb.c::handle_libusb_init %s\n", 
+		g_dbus_connection_get_unique_name(g_dbus_method_invocation_get_connection(invocation)));
 
 	libusb_context_portal *context_portal = g_new(libusb_context_portal, 1);
 	memset(context_portal, 0, sizeof(libusb_context_portal));
@@ -239,7 +313,7 @@ handle_libusb_get_bus_number (XdpLibUsb *object,
 									gulong device)
 {
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_bus_number device := 0x%lx.\n", device);
-	libusb_device *dev = get_device_portal(device);
+	libusb_device *dev = get_device_portal((libusb_device *)device);
 
 	int result = libusb_get_bus_number(dev);
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_bus_number result := %d.\n", result);
@@ -256,7 +330,7 @@ handle_libusb_get_device_address (XdpLibUsb *object,
 									gulong device)
 {
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_address device := 0x%lx.\n", device);
-	libusb_device *dev = get_device_portal(device);
+	libusb_device *dev = get_device_portal((libusb_device *)device);
 
 	int result = libusb_get_device_address(dev);
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_address result := %d.\n", result);
@@ -273,7 +347,7 @@ handle_libusb_open (XdpLibUsb *object,
 									gulong device)
 {
 	fprintf(stderr, "lib-usb.c::handle_libusb_open device := 0x%lx.\n", device);
-	libusb_device *dev = get_device_portal(device);
+	libusb_device *dev = get_device_portal((libusb_device *)device);
 	libusb_device_handle *handle = NULL;
 	fprintf(stderr, "dev := 0x%lx\n", (unsigned long)dev);
 	
@@ -292,8 +366,9 @@ handle_libusb_get_device_descriptor (XdpLibUsb *object,
 									gulong device)
 {
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  device := 0x%lx\n", device);
-	libusb_device *dev = get_device_portal(device);
+	libusb_device *dev = get_device_portal((libusb_device *)device);
 	struct libusb_device_descriptor desc;
+	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  dev := 0x%lx\n", (unsigned long)dev);
 
 	int ret = libusb_get_device_descriptor(dev, &desc);
 	fprintf(stderr, "lib-usb.c::handle_libusb_get_device_descriptor  ret := %d\n", ret);
@@ -326,12 +401,21 @@ handle_libusb_exit (XdpLibUsb *object,
 		fprintf(stderr, ", context := 0x%lx\n", (unsigned long)context_portal->context);
 
 		libusb_exit((libusb_context *)context_portal->context);
+		context_portal->context = 0L;
 
-		//free_context_portal(context_portal);
+		free_context_portal(context_portal);
 	}//endif true
 
 	g_dbus_method_invocation_return_value (invocation, NULL);
 
+	/*
+	statm_t result;
+	read_off_memory_status(&result);
+	fprintf(stderr, "lib-usb.c::handle_libusb_exit size:= %ld, resident := %ld\n",
+		result.size, result.resident);
+		*/
+
+	fprintf(stderr, "lib-usb.c::handle_libusb_exit cCalls := %ld.\n", cCalls);
 	fprintf(stderr, "\n");
 	return TRUE;
 }
