@@ -1,0 +1,299 @@
+#define DBUS_API_SUBJECT_TO_CHANGE
+#include <dbus/dbus.h>
+#include <stdbool.h>
+#include <unistd.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <glib.h>
+
+typedef struct _item
+{
+	char type;
+	void *var;
+} item;
+
+unsigned long defaultCtx = 1;
+GList *
+callMethod(char *method, GList *listParams)
+{
+	DBusMessage* msg;
+	DBusPendingCall* pending;
+	DBusConnection* conn;
+	DBusError err;
+	DBusMessageIter args;
+	void *param = NULL;
+	dbus_uint64_t param_uint64;
+	dbus_uint32_t param_uint32;
+	dbus_int64_t param_int64;
+	dbus_int32_t param_int32;
+	//dbus_uint64_t param = atol(_param);
+
+	// initialiset the errors
+	dbus_error_init(&err);
+
+	// connect to the system bus and check for errors
+	conn = dbus_bus_get(DBUS_BUS_SESSION, &err);
+	if (dbus_error_is_set(&err)) { 
+		fprintf(stderr, "Connection Error (%s)\n", err.message); 
+		dbus_error_free(&err);
+	}
+	if (NULL == conn) { 
+		exit(1); 
+	}
+
+
+	msg = dbus_message_new_method_call( "org.freedesktop.portal.Desktop", // target for the method call
+												  "/org/freedesktop/portal/desktop", // object to call on
+													"org.freedesktop.portal.LibUsb", // interface to call on
+												  method); // method name
+												  //"libusb_init"); // method name
+
+	if (NULL == msg) { 
+		fprintf(stderr, "Message Null\n");
+		exit(1);
+	}
+
+	if(listParams && g_list_length(listParams)){
+		dbus_message_iter_init_append(msg, &args);
+		GList *tmp = g_list_first(listParams);
+
+		while(tmp){
+			item *p = tmp->data;
+
+			fprintf(stderr, "type := %c, var := %ld\n", p->type, (*(unsigned long *)p->var));
+			if (!dbus_message_iter_append_basic(&args, p->type, p->var)) { 
+				fprintf(stderr, "Out Of Memory!\n"); 
+				exit(1);
+			}//endif true
+			tmp = tmp->next;
+		}//endwhile
+
+
+		// clean list?
+
+	}//endif true
+
+	// send message and get a handle for a reply
+	if (!dbus_connection_send_with_reply (conn, msg, &pending, 100)) { // -1 is default timeout
+		fprintf(stderr, "Out Of Memory!\n"); 
+		exit(1);
+	}
+
+	if (NULL == pending) { 
+		fprintf(stderr, "Pending Call Null\n"); 
+		exit(1); 
+	}
+	dbus_connection_flush(conn);
+
+	// free message
+	dbus_message_unref(msg);
+
+	// block until we receive a reply
+	dbus_pending_call_block(pending);
+	
+	// get the reply message
+	msg = dbus_pending_call_steal_reply(pending);
+	if (NULL == msg) {
+		fprintf(stderr, "Reply Null\n"); 
+		exit(1); 
+	}
+
+	GList *listResults = NULL;
+	// read the parameters
+	if (dbus_message_iter_init(msg, &args)){
+		fprintf(stderr, "Got Reply: ");
+
+		do {
+			item *it = malloc(sizeof(item));
+			it->type = dbus_message_iter_get_arg_type(&args); 
+			fprintf(stderr, "(%c) ", it->type); 
+
+			switch(it->type){
+			case 'i':
+				it->var = malloc(sizeof(dbus_uint32_t));
+				break;
+			case 't':
+				it->var = malloc(sizeof(dbus_uint64_t));
+				break;
+			default :
+				fprintf(stderr, "type error\n");
+				continue;
+			}//endswitch
+		  	dbus_message_iter_get_basic(&args, it->var);
+			switch(it->type){
+			case 'i':
+			case 't':
+				fprintf(stderr, "%ld, ", (*(unsigned long *)it->var));
+				break;
+			case 's':
+				fprintf(stderr, "%s, ", it->var);
+				break;
+			}//endswitch
+
+			listResults = g_list_append(listResults, it);
+		}while(dbus_message_iter_next(&args));
+
+		fprintf(stderr, "\n");
+	}//endif true
+	else
+		fprintf(stderr, "Message has no arguments!\n"); 
+
+	// free reply and close connection
+	dbus_message_unref(msg); 
+
+	return(listResults);
+}//end callMethod(char *args)
+
+
+int
+dbus_libusb_init(unsigned long **context)
+{
+	GList *listResults = NULL;
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_init() context := 0x%lx\n", 
+						 (unsigned long)context);
+	item *it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	if(context)
+		(*(dbus_uint64_t *)it->var) = **context;
+	else
+		(*(dbus_uint64_t *)it->var) = defaultCtx = 0;
+
+	listResults = callMethod("libusb_init", g_list_append(NULL, it));
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_init() listResults := 0x%lx\n", 
+						 (unsigned long)listResults);
+
+	item *p = g_list_first(listResults)->data;
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_init() p := 0x%lx\n", 
+						 (unsigned long)p);
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_init() p->var := 0x%lx\n", 
+							(*(dbus_uint64_t*)p->var));
+	if(context)
+		**context = (*(dbus_uint64_t*)p->var);
+	else 
+		defaultCtx = (*(dbus_uint64_t*)p->var);
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_init() context := 0x%lx\n",
+						 (unsigned long)context);
+
+	p = g_list_first(listResults)->next->data;
+	int rc = (*(dbus_uint32_t*)p->var);
+
+	return(rc);
+}//end dbus_libusb_init(unsigned long context)
+
+void
+dbus_libusb_exit(unsigned long context)
+{
+	GList *listResults = NULL;
+	item *it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	if(context)
+		(*(dbus_uint64_t *)it->var) = context;
+	else
+		(*(dbus_uint64_t *)it->var) = defaultCtx;
+
+	listResults = callMethod("libusb_exit", g_list_append(NULL, it));
+
+}//end dbus_libusb_exit(unsigned long context)
+
+int
+dbus_libusb_get_device_list(unsigned long context, unsigned long ***devs)
+{
+	GList *listResults = NULL, *listParams = NULL;
+	fprintf(stderr,
+			"libusb::dbus_libusb.c::dbus_libusb_get_device_list() context := 0x%lx (0x%lx), devs := 0x%lx.\n", 
+						 (unsigned long)context, defaultCtx, devs);
+	item *it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	if(context)
+		(*(dbus_uint64_t *)it->var) = context;
+	else
+		(*(dbus_uint64_t *)it->var) = defaultCtx;
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_get_device_list() it->var := 0x%lx.\n", 
+			(*(dbus_uint64_t *)it->var));
+	listParams = g_list_append(NULL, it);
+
+	it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	(*(dbus_uint64_t *)it->var) = 0;
+	listParams = g_list_append(listParams, it);
+
+	listResults = callMethod("libusb_get_device_list", listParams);
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_get_device_list() listResults := 0x%lx\n", 
+						 (unsigned long)listResults);
+
+	item *p = g_list_first(listResults)->data;
+	*devs = malloc(sizeof(dbus_uint64_t));
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_get_device_list() devs := 0x%lx\n", 
+						 (unsigned long)*devs);
+	**devs = (unsigned long *)(*(dbus_uint64_t*)p->var);
+	fprintf(stderr, "libusb::dbus_libusb.c::dbus_libusb_get_device_list() devs := 0x%lx\n", 
+						 (unsigned long)*devs);
+
+	p = g_list_first(listResults)->next->data;
+	int cnt = (*(dbus_uint32_t*)p->var);
+
+	return(cnt);
+}//end dbus_libusb_get_device_list(unsigned long context, unsigned long devs)
+
+void
+dbus_libusb_free_device_list(unsigned long devs, int unref_devices)
+{
+	GList *listResults = NULL, *listParams = NULL;
+	item *it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	(*(dbus_uint64_t *)it->var) = devs;
+	listParams = g_list_append(NULL, it);
+
+	it = malloc(sizeof(item));
+	it->type = 't';
+	it->var = malloc(sizeof(dbus_uint64_t));
+	(*(dbus_uint32_t *)it->var) = unref_devices;
+	listParams = g_list_append(listParams, it);
+
+	listResults = callMethod("libusb_free_device_list", listParams);
+
+	return;
+}//end dbus_libusb_free_device_list(unsigned long context, unsigned long devs)
+
+#ifdef TEST_DBUS_LIBUSB 
+int main(int argc, char** argv)
+{
+	char* typeParams = "no param";
+	GList *listParams = NULL, *listResults = NULL;
+
+	//////////////////////////////////////////////////////////////////////////
+	fprintf(stderr, "dbus_libusb_init(0) ... \n");
+	dbus_uint64_t *context = malloc(sizeof(dbus_uint64_t));
+	*context = 0;
+	//int rc = dbus_libusb_init(&context);
+	int rc = dbus_libusb_init(NULL);
+
+	fprintf(stderr, "context := %ld, rc := %d.\n", context, rc);
+	fprintf(stderr, "\n");
+
+	//////////////////////////////////////////////////////////////////////////
+	fprintf(stderr, "dbus_libusb_get_device_list(%ld, 0) ... \n", context);
+	unsigned long **devs;
+	int cnt = dbus_libusb_get_device_list(*context, &devs);
+	fprintf(stderr, "cnt := %d, devs := 0x%lx.\n", cnt, *devs);
+	fprintf(stderr, "\n");
+
+	//////////////////////////////////////////////////////////////////////////
+	fprintf(stderr, "dbus_libusb_free_device_list(%ld, 0) ... \n", context);
+	dbus_libusb_free_device_list((unsigned long)*devs, 0);
+	fprintf(stderr, "\n");
+
+	//////////////////////////////////////////////////////////////////////////
+	fprintf(stderr, "dbus_libusb_exit(%ld) ... \n", *context);
+	dbus_libusb_exit(*context);
+	fprintf(stderr, "\n");
+
+	return 0;
+}
+#endif//TEST_DBUS_LIBUSB 

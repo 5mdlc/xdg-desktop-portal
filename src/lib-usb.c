@@ -1,5 +1,5 @@
 /*
- * Copyright © 2016 Red Hat, Inc
+ * Copyright © 2020 5mdlc
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  *
- * Authors:
+ * Authors: 5mdlc
  */
 
 #include "config.h"
@@ -30,31 +30,6 @@
 #include "request.h"
 #include "xdp-dbus.h"
 #include "xdp-utils.h"
-
-typedef struct {
-		unsigned long size,resident,share,text,lib,data,dt;
-} statm_t;
-
-void
-read_off_memory_status(statm_t *result)
-{
-	//unsigned long dummy;
-	const char* statm_path = "/proc/self/statm";
-
-	FILE *f = fopen(statm_path,"r");
-	if(!f){
-		perror(statm_path);
-		abort();
-	}
-	if(7 != fscanf(f,"%ld %ld %ld %ld %ld %ld %ld",
-		&result->size,&result->resident,&result->share,&result->text,&result->lib,&result->data,&result->dt))
-	{
-		perror(statm_path);
-		abort();
-	}
-	fclose(f);
-}
-
 
 
 unsigned long cCalls = 0;
@@ -407,13 +382,6 @@ handle_libusb_exit (XdpLibUsb *object,
 	}//endif true
 
 	g_dbus_method_invocation_return_value (invocation, NULL);
-
-	/*
-	statm_t result;
-	read_off_memory_status(&result);
-	fprintf(stderr, "lib-usb.c::handle_libusb_exit size:= %ld, resident := %ld\n",
-		result.size, result.resident);
-		*/
 
 	fprintf(stderr, "lib-usb.c::handle_libusb_exit cCalls := %ld.\n", cCalls);
 	fprintf(stderr, "\n");
